@@ -1,0 +1,58 @@
+<nav class="navbar">
+  <button class="navbar__burger" (click)="onBurgerClick()">
+    <i class="fas fa-bars"></i>
+  </button>
+  
+  <div class="navbar__links">
+    <!-- Dynamic categories from API -->
+    <div class="navbar__item" *ngFor="let item of navItems; let i = index">
+      <a href="#" (click)="selectCategory(categories[i].id); $event.preventDefault()">
+        {{ item.label }}
+        <i class="fas fa-chevron-down arrow" *ngIf="item.children"></i>
+      </a>
+      <div class="dropdown" *ngIf="item.children">
+<a *ngFor="let child of item.children" href="#" (click)="$event.preventDefault(); selectCategory(categories[i].id)">{{ child.label }}</a>
+      </div>
+    </div>
+
+    <!-- Carte Cadeau mega menu (static) -->
+    <div class="navbar__item has-mega-menu">
+      <button class="btn-carte-cadeau" (click)="toggleCarteCadeau()">
+        <i class="fas fa-gift"></i> Carte Cadeau
+        <i class="fas fa-chevron-up" *ngIf="carteCadeauOpen"></i>
+        <i class="fas fa-chevron-down" *ngIf="!carteCadeauOpen"></i>
+      </button>
+    </div>
+
+    <div class="navbar__special" *ngFor="let link of specialLinks">
+      {{ link.label }}
+    </div>
+  </div>
+</nav>
+
+<!-- MEGA MENU -->
+<div class="mega-overlay" *ngIf="carteCadeauOpen" (click)="closeCarteCadeauMenu()"></div>
+<div class="mega-menu" *ngIf="carteCadeauOpen">
+  <div class="mega-inner">
+    <div class="mega-col" *ngFor="let group of carteCadeauMenu">
+      <h4 class="mega-group-title">{{ group.name }}</h4>
+      <ul>
+        <li *ngFor="let item of group.items" (click)="selectCarteCadeauItem(item)">{{ item }}</li>
+      </ul>
+    </div>
+    <div class="mega-col">
+      <ul class="mega-singles">
+        <li *ngFor="let item of carteCadeauSingles" class="mega-single"
+            (click)="selectCarteCadeauItem(item)"><strong>{{ item }}</strong></li>
+      </ul>
+    </div>
+    <div class="mega-promo">
+      <div class="mega-promo-box">
+        <div class="promo-badge">EN LIGNE</div>
+        <h3>CODE en minutes</h3>
+        <p>100% SÉCURISÉ</p>
+        <button (click)="closeCarteCadeauMenu()">Commander <i class="fas fa-angle-right"></i></button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800&display=swap');
+@import 'styles/variables';
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--light-bg, #f0f2f7);
+  color: var(--text-dark, #111827);
+  font-family: 'Nunito', 'Segoe UI', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #edf0f5; }
+::-webkit-scrollbar-thumb { background: #9aa5b8; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #5a6478; }
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; }
+input, textarea, select { font-family: inherit; color: inherit; }
+html, body, app-root { height: 100%; min-height: 100vh; }

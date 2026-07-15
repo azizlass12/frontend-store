@@ -1,0 +1,434 @@
+<div class="home-wrap">
+
+  <!-- HEADER (gère le panier, la recherche, le tracking header) -->
+ <app-header 
+  (menuClick)="drawerOpen = true" 
+  (search)="onSearch($event)" 
+  (productSelect)="addToCart($event)"
+  (checkout)="openAuthModal()">
+</app-header>
+  <!-- NAVBAR -->
+  <app-navbar 
+    (burgerClick)="drawerOpen = true" 
+    (categoryClick)="onCategorySelected($event)" 
+    (carteCadeauSelect)="selectCarteCadeauItem($event)">
+  </app-navbar>
+
+  <!-- DRAWER -->
+  <app-drawer 
+    [isOpen]="drawerOpen" 
+    [categories]="categories" 
+    (close)="drawerOpen = false" 
+    (categoryClick)="onCategorySelected($event)">
+  </app-drawer>
+
+  <!-- HERO CAROUSEL -->
+  <app-hero-carousel 
+    (addToCart)="addToCart($event)" 
+    *ngIf="!searchQuery && !selectedCategoryId">
+  </app-hero-carousel>
+
+  <!-- ===== CATEGORY PRODUCTS ===== -->
+  <section class="category-products" *ngIf="selectedCategoryId">
+    <div class="section-header">
+      <h2>{{ selectedCategoryName }}</h2>
+      <button class="btn-clear" (click)="clearCategoryFilter()">
+        <i class="fas fa-times"></i> Fermer
+      </button>
+    </div>
+    <div class="products-grid">
+      <div class="product-card" *ngFor="let product of selectedCategoryProducts">
+        <div class="product-img" (click)="goToProduct(product.id)">
+          <img [src]="product.imageUrl || 'assets/placeholder.png'" [alt]="product.name"/>
+          <span class="badge" *ngIf="product.stock <= 5">Stock limité</span>
+        </div>
+        <div class="product-info">
+          <h4>{{ product.name }}</h4>
+          <p class="price">{{ product.price | number:'1.0-0' }} DT</p>
+          <button class="btn-add" (click)="addToCart(product); $event.stopPropagation()">
+            <i class="fas fa-cart-plus"></i> Ajouter
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PAGE HERO ===== -->
+  <div class="page-hero" *ngIf="!selectedCategoryId && !searchQuery">
+    <h1>Bienvenue chez GameExtra</h1>
+    <div class="page-hero__breadcrumb">
+      <a href="#">Accueil</a>
+      <span>/</span>
+      <span class="current">Tous les produits</span>
+    </div>
+  </div>
+
+  <!-- ===== PRODUCTS ===== -->
+  <app-products 
+    *ngIf="!selectedCategoryId || searchQuery" 
+    [searchQuery]="searchQuery"
+    (addToCart)="addToCart($event)">
+  </app-products>
+
+  <!-- ===== BOUTONS FLOTTANTS ===== -->
+  <div class="floating-actions">
+    <button class="fab-track" (click)="openTracking()" title="Mes commandes">
+      📦
+      <span class="fab-label">Commandes</span>
+    </button>
+    <button class="fab-account"
+            (click)="clientAuth.isLoggedIn ? openProfile() : openAuthModal()"
+            [title]="clientAuth.isLoggedIn ? clientAuth.currentUser?.username : 'Connexion'">
+      <span *ngIf="!clientAuth.isLoggedIn">👤</span>
+      <span *ngIf="clientAuth.isLoggedIn" class="fab-avatar">
+        {{ clientAuth.currentUser?.username?.[0]?.toUpperCase() }}
+      </span>
+      <span class="fab-label">{{ clientAuth.isLoggedIn ? clientAuth.currentUser?.username : 'Connexion' }}</span>
+    </button>
+  </div>
+
+  <!-- ===== MODALE AUTH ===== -->
+  <div class="modal-overlay" *ngIf="authModalOpen" (click)="closeAuthModal()"></div>
+  <div class="modal-box" *ngIf="authModalOpen">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <span class="modal-icon">🛒</span>
+        <div>
+          <h2>Finaliser la commande</h2>
+          <p>Connectez-vous ou continuez en invité</p>
+        </div>
+      </div>
+      <button class="modal-close" (click)="closeAuthModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="auth-success-msg" *ngIf="authSuccess">✅ {{ authSuccess }}</div>
+
+      <!-- CHOIX -->
+      <div class="auth-choice" *ngIf="authMode === 'choice'">
+        <div class="choice-card" (click)="setAuthMode('login')">
+          <span class="choice-icon">🔑</span>
+          <div>
+            <h3>J'ai un compte</h3>
+            <p>Connectez-vous pour suivre vos commandes</p>
+          </div>
+          <span class="choice-arrow">›</span>
+        </div>
+        <div class="choice-card" (click)="setAuthMode('register')">
+          <span class="choice-icon">✨</span>
+          <div>
+            <h3>Créer un compte</h3>
+            <p>Inscription rapide et gratuite</p>
+          </div>
+          <span class="choice-arrow">›</span>
+        </div>
+        <div class="choice-divider"><span>ou</span></div>
+        <button class="guest-btn" (click)="continueAsGuest()">👤 Continuer sans compte</button>
+      </div>
+
+      <!-- LOGIN -->
+      <div class="auth-form" *ngIf="authMode === 'login'">
+        <button class="back-link" (click)="setAuthMode('choice')">← Retour</button>
+        <h3>Connexion</h3>
+        <div class="auth-error" *ngIf="authError">⚠️ {{ authError }}</div>
+        <input type="text" [(ngModel)]="authUsername" placeholder="Nom d'utilisateur *" (keyup.enter)="doLogin()" />
+        <input type="password" [(ngModel)]="authPassword" placeholder="Mot de passe *" (keyup.enter)="doLogin()" />
+        <button class="auth-submit-btn" (click)="doLogin()" [disabled]="authLoading">
+          <span *ngIf="!authLoading">🔑 Se connecter</span>
+          <span *ngIf="authLoading">Connexion...</span>
+        </button>
+        <p class="auth-switch">Pas de compte ? <a (click)="setAuthMode('register')">Créer un compte</a></p>
+      </div>
+
+      <!-- REGISTER -->
+      <div class="auth-form" *ngIf="authMode === 'register'">
+        <button class="back-link" (click)="setAuthMode('choice')">← Retour</button>
+        <h3>Créer un compte</h3>
+        <div class="auth-error" *ngIf="authError">⚠️ {{ authError }}</div>
+        <input type="text" [(ngModel)]="authUsername" placeholder="Nom d'utilisateur *" />
+        <input type="password" [(ngModel)]="authPassword" placeholder="Mot de passe *" />
+        <input type="password" [(ngModel)]="authPassword2" placeholder="Confirmer le mot de passe *" (keyup.enter)="doRegister()" />
+        <button class="auth-submit-btn" (click)="doRegister()" [disabled]="authLoading">
+          <span *ngIf="!authLoading">✨ Créer mon compte</span>
+          <span *ngIf="authLoading">Création...</span>
+        </button>
+        <p class="auth-switch">Déjà un compte ? <a (click)="setAuthMode('login')">Se connecter</a></p>
+      </div>
+
+      <!-- GUEST / PHONE -->
+   <!-- GUEST / PHONE -->
+<div class="auth-form" *ngIf="authMode === 'guest'">
+  <button class="back-link" *ngIf="!clientAuth.isLoggedIn" (click)="setAuthMode('choice')">← Retour</button>
+  
+  <!-- Si connecté : afficher info + juste téléphone -->
+  <div class="auth-logged-info" *ngIf="clientAuth.isLoggedIn">
+    <div class="logged-avatar">{{ clientAuth.currentUser?.username?.[0]?.toUpperCase() }}</div>
+    <div>
+      <strong>{{ clientAuth.currentUser?.username }}</strong>
+      <span>Connecté ✅</span>
+    </div>
+  </div>
+
+  <!-- Si PAS connecté : demander le nom -->
+  <div *ngIf="!clientAuth.isLoggedIn">
+    <h3>Vos informations</h3>
+    <p class="auth-hint">Pour la livraison et le suivi</p>
+    <div class="auth-error" *ngIf="authError">⚠️ {{ authError }}</div>
+    <input type="text" [(ngModel)]="clientName" placeholder="Votre nom complet *" />
+    <input type="tel" [(ngModel)]="clientPhone" placeholder="Numéro de téléphone *" (keyup.enter)="confirmPhoneAndCheckout()" />
+  </div>
+
+  <!-- Si connecté : demander juste le téléphone -->
+  <div *ngIf="clientAuth.isLoggedIn">
+    <h3>Numéro de téléphone</h3>
+    <p class="auth-hint">Requis pour la livraison</p>
+    <div class="auth-error" *ngIf="authError">⚠️ {{ authError }}</div>
+    <input type="tel" [(ngModel)]="clientPhone" placeholder="Ex: 55 123 456 *" (keyup.enter)="confirmPhoneAndCheckout()" />
+  </div>
+
+  <!-- Récapitulatif -->
+  <div class="cart-summary">
+    <div class="cart-summary-title">📦 Récapitulatif</div>
+    <div class="cart-summary-item" *ngFor="let item of cartItems">
+      <span>{{ item.product.name }} × {{ item.quantity }}</span>
+      <strong>{{ (item.product.price * item.quantity) | number:'1.0-0' }} DT</strong>
+    </div>
+    <div class="cart-summary-total">
+      <span>Total</span>
+      <strong>{{ cartTotal | number:'1.0-0' }} DT</strong>
+    </div>
+  </div>
+
+  <button class="auth-submit-btn confirm" (click)="confirmPhoneAndCheckout()" [disabled]="isLoading">
+    <span *ngIf="!isLoading">✅ Confirmer et contacter le support</span>
+    <span *ngIf="isLoading">Traitement...</span>
+  </button>
+</div>
+    </div>
+  </div>
+
+  <!-- ===== MODALE SUIVI COMMANDE ===== -->
+  <div class="modal-overlay" *ngIf="trackingOpen" (click)="closeTracking()"></div>
+  <div class="modal-box" *ngIf="trackingOpen">
+    <div class="modal-header">
+      <div class="modal-header-left">
+        <span class="modal-icon">📦</span>
+        <div>
+          <h2>Suivi de commande</h2>
+          <p>Consultez vos commandes et messages</p>
+        </div>
+      </div>
+      <button class="modal-close" (click)="closeTracking()">✕</button>
+    </div>
+    <div class="modal-body" *ngIf="!trackingChatOpen">
+      <div class="phone-search">
+        <label>Entrez votre numéro de téléphone</label>
+        <div class="phone-input-row">
+          <input type="tel" [(ngModel)]="trackingPhone" placeholder="Ex: 55 123 456" (keyup.enter)="searchByPhone()" />
+          <button (click)="searchByPhone()" [disabled]="trackingLoading">
+            <span *ngIf="!trackingLoading">🔍 Rechercher</span>
+            <span *ngIf="trackingLoading">⏳</span>
+          </button>
+        </div>
+        <p class="tracking-error" *ngIf="trackingError">{{ trackingError }}</p>
+      </div>
+      <div class="sessions-list" *ngIf="trackingSessions.length > 0">
+        <h3>{{ trackingSessions.length }} commande(s) trouvée(s)</h3>
+        <div class="session-card" *ngFor="let session of trackingSessions" (click)="openTrackingSession(session)">
+          <div class="session-card-left">
+            <div class="session-avatar">{{ session.clientName[0] | uppercase }}</div>
+            <div class="session-info">
+              <div class="session-name">{{ session.clientName }}</div>
+              <div class="session-date">{{ session.createdAt | date:'dd/MM/yyyy HH:mm' }}</div>
+              <div class="session-msgs">{{ session.messages.length || 0 }} message(s)</div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+    <div class="modal-body tracking-chat-view" *ngIf="trackingChatOpen && selectedTrackingSession">
+      <button class="back-link" (click)="backToList()">← Retour</button>
+      <div class="tracking-chat-header">
+        <strong>Commande du {{ selectedTrackingSession.createdAt | date:'dd/MM/yyyy à HH:mm' }}</strong>
+
+      </div>
+      <div class="tracking-messages" #trackingMessages>
+        <div *ngFor="let msg of selectedTrackingSession.messages"
+             class="track-msg" [class.track-msg-client]="msg.senderType === 'CLIENT'" [class.track-msg-admin]="msg.senderType === 'ADMIN'">
+          <div class="track-msg-sender">{{ msg.senderType === 'ADMIN' ? '🎮 Support' : '👤 Vous' }}</div>
+          <div class="track-msg-bubble">{{ msg.message }}</div>
+          <div class="track-msg-time">{{ msg.sentAt | date:'dd/MM HH:mm' }}</div>
+        </div>
+        <div class="no-messages" *ngIf="!selectedTrackingSession.messages?.length">Aucun message.</div>
+      </div>
+      <div class="profile-reply-area" *ngIf="selectedTrackingSession.status !== 'CLOSED'">
+        <input type="text" [(ngModel)]="trackingNewMessage" placeholder="Répondre au support..." (keyup.enter)="sendTrackingMessage()" />
+        <button (click)="sendTrackingMessage()" [disabled]="!trackingNewMessage.trim()">➤</button>
+      </div>
+      <div class="chat-closed-banner" *ngIf="selectedTrackingSession.status === 'CLOSED'">
+        🔒 Conversation clôturée
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODALE PROFIL ===== -->
+<!-- ===== MODALE PROFIL ===== -->
+<div class="modal-overlay" *ngIf="profileOpen" (click)="closeProfile()"></div>
+<div class="modal-box profile-modal-box" *ngIf="profileOpen">
+  <div class="modal-header profile-header-dark">
+    <div class="modal-header-left">
+      <div class="profile-avatar-lg">{{ clientAuth.currentUser?.username?.[0]?.toUpperCase() }}</div>
+      <div>
+        <h2>👋 Bonjour, {{ clientAuth.currentUser?.username }} !</h2>
+        <p>Mon espace GamingShop</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="logout-btn" (click)="clientLogout()">🚪 Déconnexion</button>
+      <button class="modal-close" (click)="closeProfile()">✕</button>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="modal-body" *ngIf="profileLoading">
+    <div class="profile-loading">
+      <div class="spinner"></div>
+      <p>Chargement de vos commandes...</p>
+    </div>
+  </div>
+
+  <!-- ERREUR -->
+  <div class="modal-body" *ngIf="profileError && !profileLoading">
+    <div class="auth-error">⚠️ {{ profileError }}</div>
+  </div>
+
+  <!-- LISTE DES NUMÉROS -->
+  <div class="modal-body" *ngIf="!profileLoading && !profileChatOpen && !profileError">
+    <div class="profile-empty" *ngIf="profileGroups.length === 0">
+      <div class="profile-empty-icon">📦</div>
+      <h3>Aucune commande</h3>
+      <p>Vous n'avez pas encore passé de commande.</p>
+      <button class="auth-submit-btn" (click)="openNewOrderFromProfile()">
+        🛒 Passer ma première commande
+      </button>
+    </div>
+
+    <div *ngIf="profileGroups.length > 0">
+      <div class="profile-section-title">
+        📦 Mes commandes
+        <span class="badge-count">{{ profileAllSessions.length }}</span>
+        <button class="btn-new-order" (click)="openNewOrderFromProfile()">🛒 Nouveau achat</button>
+      </div>
+      <div class="session-card" *ngFor="let group of profileGroups" (click)="openProfileGroup(group.phone)">
+        <div class="session-card-left">
+          <div class="session-avatar">📞</div>
+          <div class="session-info">
+            <div class="session-name">📞 {{ group.phone }}</div>
+            <div class="session-date">{{ group.sessions.length }} commande(s)</div>
+            <div class="session-msgs">Dernière : {{ group.lastDate | date:'dd/MM/yyyy à HH:mm' }}</div>
+          </div>
+        </div>
+        <div class="session-card-right">
+          <span class="session-arrow">›</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONVERSATION UNIFIÉE PAR NUMÉRO -->
+  <div class="modal-body profile-chat-body" *ngIf="!profileLoading && profileChatOpen">
+    <button class="back-link" (click)="backToProfile()">← Retour</button>
+
+    <div class="tracking-chat-header">
+      <strong>📞 {{ profilePhone }}</strong>
+      <span>{{ profileSessions.length }} commande(s)</span>
+    </div>
+
+    <!-- Chips statuts -->
+  
+
+    <!-- Messages fusionnés -->
+    <div class="tracking-messages" #profileMessages>
+      <ng-container *ngFor="let msg of mergedProfileMessages">
+        <div class="order-separator" *ngIf="msg.isFirstOfSession">
+          <span>📦 Commande du {{ msg.sessionDate | date:'dd/MM/yyyy à HH:mm' }}</span>
+        </div>
+        <div class="track-msg"
+             [class.track-msg-client]="msg.senderType === 'CLIENT'"
+             [class.track-msg-admin]="msg.senderType === 'ADMIN'">
+          <div class="track-msg-sender">{{ msg.senderType === 'ADMIN' ? '🎮 Support GamingShop' : '👤 Vous' }}</div>
+          <div class="track-msg-bubble">{{ msg.message }}</div>
+          <div class="track-msg-time">{{ msg.sentAt | date:'dd/MM HH:mm' }}</div>
+        </div>
+      </ng-container>
+      <div class="no-messages" *ngIf="mergedProfileMessages.length === 0">Aucun message.</div>
+    </div>
+
+    <!-- Zone de réponse -->
+    <div class="profile-reply-area" *ngIf="!allProfileSessionsClosed">
+      <input type="text" [(ngModel)]="profileNewMessage"
+             placeholder="Répondre au support..."
+             (keyup.enter)="sendProfileMessage()" />
+      <button (click)="sendProfileMessage()" [disabled]="!profileNewMessage.trim()">➤</button>
+    </div>
+    <div class="chat-closed-banner" *ngIf="allProfileSessionsClosed">
+      🔒 Toutes les commandes de ce numéro sont clôturées
+    </div>
+  </div>
+
+</div>>
+
+  <!-- ===== CHAT WINDOW ===== -->
+  <div class="chat-overlay" *ngIf="chatOpen" (click)="closeChat()"></div>
+  <div class="chat-window" *ngIf="chatOpen">
+    <div class="chat-head">
+      <div class="chat-head-info">
+        <div class="chat-avatar">🎮</div>
+        <div>
+          <div class="chat-title">Support GamingShop</div>
+          <div class="chat-status">En ligne</div>
+        </div>
+      </div>
+      <button class="chat-close" (click)="closeChat()">✕</button>
+    </div>
+    <div class="chat-messages" #chatMessages>
+      <div class="msg system" *ngIf="!chatSession?.messages?.length">
+        <p>Bienvenue ! Votre commande a été créée. Un agent vous répondra bientôt.</p>
+      </div>
+      <div class="msg" *ngFor="let msg of chatSession?.messages"
+           [class.client]="msg.senderType === 'CLIENT'" [class.admin]="msg.senderType === 'ADMIN'">
+        <div class="msg-bubble">{{ msg.message }}</div>
+        <div class="msg-meta">
+          {{ msg.senderType === 'ADMIN' ? '🎮 Support' : '👤 Vous' }} • {{ msg.sentAt | date:'dd/MM HH:mm' }}
+        </div>
+      </div>
+    </div>
+    <div class="chat-input" *ngIf="chatSession?.status !== 'CLOSED'">
+      <input type="text" [(ngModel)]="newMessage" placeholder="Écrivez votre message..." (keyup.enter)="sendClientMessage()" />
+      <button (click)="sendClientMessage()">➤</button>
+    </div>
+    <div class="chat-closed-banner" *ngIf="chatSession?.status === 'CLOSED'">
+      🔒 Conversation clôturée
+    </div>
+  </div>
+
+  <!-- ===== TOAST PRODUIT AJOUTÉ ===== -->
+  <div class="toast-cart" [ngClass]="{'visible': toastVisible}">
+    <div class="toast-left">
+      <span class="toast-icon">✅</span>
+      <div class="toast-text">
+        <strong>Produit ajouté au panier</strong>
+        <span>{{ toastProduct }}</span>
+      </div>
+    </div>
+    <div class="toast-actions">
+      <!-- ✅ CORRECT — juste ouvrir le panier, pas d'ajout -->
+<button class="toast-btn-cart" (click)="openCartFromToast()">Voir panier 🛒</button>
+      <button class="toast-btn-checkout" (click)="goToCheckout()">Commander ⚡</button>
+      <button class="toast-close" (click)="closeAddedModal()">✕</button>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <app-footer [categories]="categories" (categoryClick)="onCategorySelected($event)"></app-footer>
+</div>

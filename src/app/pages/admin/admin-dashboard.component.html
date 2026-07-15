@@ -1,0 +1,498 @@
+<!-- LOGIN PAGE -->
+<div class="login-page" *ngIf="!isLoggedIn">
+  <div class="login-card">
+    <div class="login-logo">
+      <i class="fas fa-bolt"></i>
+      GAMING<span class="accent">Extra</span>
+    </div>
+    <h2>Espace Admin</h2>
+    <p class="login-sub">
+      <i class="fas fa-shield-alt"></i> Accès réservé aux administrateurs
+    </p>
+    <div class="form-group">
+      <label><i class="fas fa-user"></i> Nom d'utilisateur</label>
+      <div class="input-wrapper">
+        <i class="fas fa-user input-icon"></i>
+        <input type="text" [(ngModel)]="loginForm.username" placeholder="admin"
+               class="form-input" (keyup.enter)="login()" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label><i class="fas fa-lock"></i> Mot de passe</label>
+      <div class="input-wrapper">
+        <i class="fas fa-lock input-icon"></i>
+        <input type="password" [(ngModel)]="loginForm.password" placeholder="••••••••"
+               class="form-input" (keyup.enter)="login()" />
+      </div>
+    </div>
+    <p class="login-error" *ngIf="loginError">
+      <i class="fas fa-exclamation-circle"></i> {{ loginError }}
+    </p>
+    <button class="btn-login" (click)="login()" [disabled]="isLoading">
+      <span *ngIf="!isLoading">Se connecter</span>
+      <span *ngIf="isLoading">Connexion...</span>
+    </button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<ng-container *ngIf="isLoggedIn">
+
+  <!-- TOPBAR MOBILE -->
+  <div class="mobile-topbar">
+    <div class="mobile-brand">GAMING<span class="accent">Extra</span></div>
+    <button class="hamburger-btn" (click)="sidebarOpen = !sidebarOpen">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+
+  <!-- OVERLAY -->
+  <div class="sidebar-overlay"
+       [class.visible]="sidebarOpen"
+       (click)="sidebarOpen = false"></div>
+
+  <div class="admin-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="admin-sidebar" [class.open]="sidebarOpen">
+      <div class="admin-brand">
+        <span>GAMING<span class="accent">Extra</span></span>
+      </div>
+      <nav class="admin-nav">
+        <a [class.active]="currentTab === 'chats'" (click)="setTab('chats')">
+          <span>Chats</span>
+          <span class="notif-badge" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+        </a>
+        <a [class.active]="currentTab === 'products'" (click)="setTab('products')">
+          <span class="nav-icon">🎮</span>
+          <span>Produits</span>
+        </a>
+        <a [class.active]="currentTab === 'categories'" (click)="setTab('categories')">
+          <span class="nav-icon">📁</span>
+          <span>Catégories</span>
+        </a>
+      </nav>
+      <div class="admin-footer">
+        <div class="admin-user-info">
+          <div class="admin-avatar">{{ getClientInitial(adminUsername) }}</div>
+          <span>{{ adminUsername }}</span>
+        </div>
+        <button class="btn-logout" (click)="logout()">Déconnexion</button>
+      </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <main class="admin-main">
+
+      <!-- ===== CHATS TAB ===== -->
+      <div class="tab-content" *ngIf="currentTab === 'chats'">
+        <div class="tab-header">
+          <div class="tab-header-left">
+            <h1> Conversations</h1>
+            <span class="badge-info">{{ filteredSessions.length }}</span>
+          </div>
+        </div>
+
+        <div class="chat-layout">
+
+          <div class="sessions-panel" [class.slide-out]="selectedPhone">
+            <div class="sessions-search">
+              <input type="text" placeholder="🔍 Rechercher..."
+                     [(ngModel)]="sessionSearch" class="search-input" />
+            </div>
+            <div class="sessions-scroll">
+              <div class="session-item"
+                   *ngFor="let group of filteredSessions"
+                   [class.active]="selectedPhone === group.phone"
+                   [class.unread]="group.hasUnread"
+                   [class.pinned]="isPinned(group.sessions[0].id)"
+                   (click)="openPhoneGroup(group)">
+                <button class="pin-btn"
+                        (click)="togglePin(group.sessions[0].id, $event)"
+                        [title]="isPinned(group.sessions[0].id) ? 'Désépingler' : 'Épingler'">
+                  {{ isPinned(group.sessions[0].id) ? '📌' : '📍' }}
+                </button>
+                <div class="session-avatar-sm">{{ getClientInitial(group.clientName) }}</div>
+                <div class="session-info">
+                  <div class="session-name">{{ group.clientName }}</div>
+                  <div class="session-phone">📞 {{ group.phone }}</div>
+                  <div class="session-time">
+                    <span class="order-count-pill">{{ getGroupOrderCount(group) }}</span>
+                    {{ group.lastDate | date:'dd/MM HH:mm' }}
+                  </div>
+                </div>
+                <div class="session-right">
+                  <span class="unread-dot" *ngIf="group.hasUnread"></span>
+                </div>
+              </div>
+              <div class="empty-sessions" *ngIf="filteredSessions.length === 0">
+                <span></span><p>Aucune conversation</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- CHAT UNIFIÉ -->
+          <div class="chat-win"
+               [class.visible]="!!selectedPhone"
+               *ngIf="selectedPhone && groupedSessions.length > 0">
+            <div class="chat-win-header">
+              <div class="client-info">
+                <button class="btn-back" (click)="backToList()">←</button>
+                <div class="client-avatar-lg">{{ getClientInitial(groupedSessions[0].clientName) }}</div>
+                <div>
+                  <h3>{{ groupedSessions[0].clientName }}</h3>
+                  <span class="client-phone">
+                    📞 {{ selectedPhone }} · {{ getGroupOrderCount({ sessions: groupedSessions }) }}
+                  </span>
+                </div>
+              </div>
+              <div class="chat-win-actions" *ngIf="activeSession">
+                
+                <button class="btn-close-session" (click)="closeSession(activeSession.id)">
+                  🔒 Clôturer
+                </button>
+              </div>
+            </div>
+
+            
+
+            <div class="admin-messages" #adminMessages>
+              <ng-container *ngFor="let msg of cachedMergedMessages">
+                <div class="order-separator" *ngIf="msg.isFirstOfSession">
+                  <span>{{ msg.orderLabel }}</span>
+                </div>
+                <div class="message-bubble"
+                     [class.client]="msg.senderType === 'CLIENT'"
+                     [class.admin]="msg.senderType === 'ADMIN'">
+                  <ng-container *ngIf="!editingMessage || editingMessage.id !== msg.id">
+                    <div class="bubble-name">{{ msg.senderName }}</div>
+                    <div class="bubble-text">
+                      {{ msg.message }}
+                      <span class="bubble-edited" *ngIf="msg.edited"> · modifié</span>
+                    </div>
+                    <div class="bubble-meta">
+                      <span class="bubble-time">{{ msg.sentAt | date:'HH:mm' }}</span>
+                      <div class="bubble-actions" *ngIf="msg.senderType === 'ADMIN'">
+                        <button class="bubble-btn edit-btn" title="Modifier"
+                                (click)="startEditMessage(msg)">✏️</button>
+                        <button class="bubble-btn del-btn" title="Supprimer"
+                                (click)="confirmDeleteMessage(msg)">🗑</button>
+                      </div>
+                    </div>
+                  </ng-container>
+                  <ng-container *ngIf="editingMessage && editingMessage.id === msg.id">
+                    <div class="bubble-name">{{ msg.senderName }}</div>
+                    <textarea class="bubble-edit-input"
+                              [(ngModel)]="editMessageText" rows="3"
+                              (keydown)="onEditKeydown($event)"
+                              (keydown.escape)="cancelEditMessage()"></textarea>
+                    <div class="bubble-edit-actions">
+                      <button class="btn-save-edit" (click)="saveEditMessage()"
+                              [disabled]="!editMessageText.trim()">✅ Sauvegarder</button>
+                      <button class="btn-cancel-edit" (click)="cancelEditMessage()">✕ Annuler</button>
+                      <span class="edit-hint">Entrée · Échap pour annuler</span>
+                    </div>
+                  </ng-container>
+                </div>
+              </ng-container>
+              <div class="empty-chat-msg" *ngIf="cachedMergedMessages.length === 0">
+                <p>Aucun message dans ces commandes</p>
+              </div>
+            </div>
+
+            <div class="admin-input-area" *ngIf="!allSessionsClosed">
+              <textarea [(ngModel)]="adminReply"
+                        placeholder="Répondre au client..."
+                        class="admin-textarea" rows="2"
+                        (keydown.enter)="onEnterSend($event)"></textarea>
+              <button class="btn-send-admin" (click)="sendAdminMessage()"
+                      [disabled]="!adminReply.trim()">Envoyer ➤</button>
+            </div>
+            <div class="session-closed-msg" *ngIf="allSessionsClosed">
+              🔒 Toutes les commandes de ce client sont clôturées
+            </div>
+          </div>
+
+          <div class="chat-placeholder" *ngIf="!selectedPhone">
+            <div>
+              <span>💬</span>
+              <p>Sélectionnez un client</p>
+              <small>Toutes ses commandes apparaîtront dans un seul fil</small>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ===== PRODUCTS TAB ===== -->
+      <div class="tab-content" *ngIf="currentTab === 'products'">
+        <div class="tab-header">
+          <div class="tab-header-left">
+            <h1>🎮 Produits</h1>
+            <span class="badge-info">{{ adminProducts.length }}</span>
+          </div>
+          <button class="btn-primary" (click)="openProductForm()">
+            <span>+</span> Nouveau produit
+          </button>
+        </div>
+        <div class="data-table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Image</th>
+                <th>Produit</th>
+                <th>Catégorie</th>
+                <th>Prix</th>
+                <th>Stock</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let product of adminProducts">
+                <td>
+                  <img [src]="product.imageUrl" [alt]="product.name" class="table-img"
+                       onerror="this.src='https://placehold.co/48x48/1e4a8c/ffffff?text=IMG'" />
+                </td>
+                <td>
+                  <div class="tbl-name">{{ product.name }}</div>
+                  <div class="tbl-desc">{{ product.description | slice:0:55 }}...</div>
+                </td>
+                <td><span class="cat-pill">{{ product.categoryName }}</span></td>
+                <td class="price-cell"><strong>{{ product.price | number:'1.0-0' }}</strong> DT</td>
+                <td>
+                  <span class="stock-badge"
+                        [class.low]="product.stock <= 3"
+                        [class.zero]="product.stock === 0">
+                    {{ product.stock }}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-btns">
+                    <button class="btn-icon edit" (click)="editProduct(product)" title="Modifier">✏️</button>
+                    <button class="btn-icon del" (click)="confirmDeleteProduct(product)" title="Supprimer">🗑</button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="adminProducts.length === 0">
+                <td colspan="6" class="empty-row">Aucun produit. Créez-en un !</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ===== CATEGORIES TAB ===== -->
+      <div class="tab-content" *ngIf="currentTab === 'categories'">
+        <div class="tab-header">
+          <div class="tab-header-left">
+            <h1>📁 Catégories</h1>
+            <span class="badge-info">{{ categories.length }}</span>
+          </div>
+          <button class="btn-primary" (click)="openCatForm()">
+            <span>+</span> Nouvelle catégorie
+          </button>
+        </div>
+        <div class="categories-grid">
+          <div class="category-card" *ngFor="let cat of categories">
+            <div class="cat-icon-big">{{ getCatIcon(cat.icon) }}</div>
+            <h3>{{ cat.name }}</h3>
+            <p>{{ cat.description || 'Aucune description' }}</p>
+            <div class="cat-actions">
+              <button class="btn-icon edit" (click)="editCategory(cat)">✏️ Modifier</button>
+              <button class="btn-icon del" (click)="confirmDeleteCategory(cat)">🗑 Supprimer</button>
+            </div>
+          </div>
+          <div class="cat-empty" *ngIf="categories.length === 0">
+            <span>📁</span><p>Aucune catégorie</p>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- BOTTOM NAV MOBILE -->
+  <nav class="mobile-bottom-nav">
+    <a [class.active]="currentTab === 'chats'" (click)="setTab('chats')">
+      <span class="nav-icon">💬</span>
+      <span>Chats</span>
+      <span class="notif-badge" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+    </a>
+    <a [class.active]="currentTab === 'products'" (click)="setTab('products')">
+      <span class="nav-icon">🎮</span>
+      <span>Produits</span>
+    </a>
+    <a [class.active]="currentTab === 'categories'" (click)="setTab('categories')">
+      <span class="nav-icon">📁</span>
+      <span>Catégories</span>
+    </a>
+  </nav>
+
+  <!-- ================================================================ -->
+  <!-- MODAL PRODUIT                                                      -->
+  <!-- ================================================================ -->
+  <div class="modal-backdrop" *ngIf="showProductForm"
+       (click)="onBackdropClick($event, 'product')"></div>
+  <div class="crud-modal" *ngIf="showProductForm">
+    <div class="crud-modal-header">
+      <div class="crud-modal-title">
+        <span class="crud-modal-icon">🎮</span>
+        <div>
+          <h2>{{ editingProduct ? 'Modifier le produit' : 'Nouveau produit' }}</h2>
+          <p>{{ editingProduct ? 'Mettez à jour les informations' : 'Remplissez les informations du produit' }}</p>
+        </div>
+      </div>
+      <button class="crud-modal-close"
+              (click)="showProductForm = false; resetProductForm()">✕</button>
+    </div>
+    <div class="crud-modal-body">
+      <div class="alert-success" *ngIf="productSuccess">✅ {{ productSuccess }}</div>
+      <div class="alert-error"   *ngIf="productError">⚠️ {{ productError }}</div>
+      <div class="crud-form-grid">
+        <div class="crud-field full">
+          <label>Nom du produit <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="productForm.name"
+                 placeholder="Ex: PlayStation 5 Digital Edition" />
+        </div>
+        <div class="crud-field">
+          <label>Prix (DT) <span class="req">*</span></label>
+          <div class="input-prefix">
+            <span>DT</span>
+            <input type="number" [(ngModel)]="productForm.price" placeholder="0" step="0.01" min="0" />
+          </div>
+        </div>
+        <div class="crud-field">
+          <label>Stock <span class="req">*</span></label>
+          <input type="number" [(ngModel)]="productForm.stock" placeholder="0" min="0" />
+        </div>
+        <div class="crud-field">
+          <label>Catégorie</label>
+          <select [(ngModel)]="productForm.categoryId">
+            <option value="" disabled selected>Choisir une catégorie</option>
+            <option *ngFor="let cat of categories" [value]="cat.id">
+              {{ getCatIcon(cat.icon) }} {{ cat.name }}
+            </option>
+          </select>
+        </div>
+        <div class="crud-field">
+          <label>URL de l'image</label>
+          <input type="text" [(ngModel)]="productForm.imageUrl" placeholder="https://..." />
+        </div>
+        <div class="crud-field img-preview-wrap" *ngIf="productForm.imageUrl">
+          <label>Aperçu</label>
+          <img [src]="productForm.imageUrl" class="img-preview"
+               onerror="this.style.display='none'" />
+        </div>
+        <div class="crud-field full">
+          <label>Description</label>
+          <textarea [(ngModel)]="productForm.description" rows="3"
+                    placeholder="Description du produit..."></textarea>
+        </div>
+        <div class="crud-separator full">
+          <span>⚙️ Options avancées (cartes cadeaux)</span>
+        </div>
+        <div class="crud-field">
+          <label>Régions disponibles</label>
+          <input type="text" [(ngModel)]="productForm.regions" placeholder="Global,EU,US,TR" />
+          <span class="field-hint">Séparées par virgule</span>
+        </div>
+        <div class="crud-field">
+          <label>Valeurs disponibles</label>
+          <input type="text" [(ngModel)]="productForm.valuesAvailable" placeholder="10$,20$,50$,100$" />
+          <span class="field-hint">Séparées par virgule</span>
+        </div>
+        <div class="crud-field full">
+          <label>Prix par valeur (JSON)</label>
+          <input type="text" [(ngModel)]="productForm.pricesByValue"
+                 placeholder='{"10$":32,"20$":62,"50$":150}' />
+          <span class="field-hint">Format JSON. Laisser vide pour utiliser le prix principal.</span>
+        </div>
+      </div>
+    </div>
+    <div class="crud-modal-footer">
+      <button class="btn-cancel-modal"
+              (click)="showProductForm = false; resetProductForm()">Annuler</button>
+      <button class="btn-save-modal" (click)="saveProduct()" [disabled]="productSaving">
+        <span *ngIf="!productSaving">
+          {{ editingProduct ? '💾 Mettre à jour' : '➕ Créer le produit' }}
+        </span>
+        <span *ngIf="productSaving" class="saving-dots">Sauvegarde<span>...</span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- MODAL CATÉGORIE                                                    -->
+  <!-- ================================================================ -->
+  <div class="modal-backdrop" *ngIf="showCatForm"
+       (click)="onBackdropClick($event, 'cat')"></div>
+  <div class="crud-modal crud-modal-sm" *ngIf="showCatForm">
+    <div class="crud-modal-header">
+      <div class="crud-modal-title">
+        <span class="crud-modal-icon">📁</span>
+        <div>
+          <h2>{{ editingCategory ? 'Modifier la catégorie' : 'Nouvelle catégorie' }}</h2>
+          <p>{{ editingCategory ? 'Mettez à jour les informations' : 'Ajoutez une nouvelle catégorie' }}</p>
+        </div>
+      </div>
+      <button class="crud-modal-close"
+              (click)="showCatForm = false; resetCatForm()">✕</button>
+    </div>
+    <div class="crud-modal-body">
+      <div class="alert-success" *ngIf="catSuccess">✅ {{ catSuccess }}</div>
+      <div class="alert-error"   *ngIf="catError">⚠️ {{ catError }}</div>
+      <div class="crud-form-grid">
+        <div class="crud-field full">
+          <label>Nom de la catégorie <span class="req">*</span></label>
+          <input type="text" [(ngModel)]="catForm.name" placeholder="Ex: Consoles" />
+        </div>
+        <div class="crud-field full">
+          <label>Icône</label>
+          <div class="icon-picker">
+            <div class="icon-option" *ngFor="let ico of iconOptions"
+                 [class.selected]="catForm.icon === ico.value"
+                 (click)="catForm.icon = ico.value">
+              <span>{{ ico.emoji }}</span>
+              <small>{{ ico.label }}</small>
+            </div>
+          </div>
+          <input type="text" [(ngModel)]="catForm.icon"
+                 placeholder="ou saisir manuellement" style="margin-top:10px" />
+        </div>
+        <div class="crud-field full">
+          <label>Description</label>
+          <input type="text" [(ngModel)]="catForm.description"
+                 placeholder="Courte description de la catégorie" />
+        </div>
+      </div>
+    </div>
+    <div class="crud-modal-footer">
+      <button class="btn-cancel-modal"
+              (click)="showCatForm = false; resetCatForm()">Annuler</button>
+      <button class="btn-save-modal" (click)="saveCategory()" [disabled]="catSaving">
+        <span *ngIf="!catSaving">
+          {{ editingCategory ? '💾 Mettre à jour' : '➕ Créer' }}
+        </span>
+        <span *ngIf="catSaving" class="saving-dots">Sauvegarde<span>...</span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================================================================ -->
+  <!-- MODAL CONFIRMATION SUPPRESSION                                     -->
+  <!-- ================================================================ -->
+  <div class="modal-backdrop danger-backdrop" *ngIf="confirmModal.open"></div>
+  <div class="confirm-modal" *ngIf="confirmModal.open">
+    <div class="confirm-icon">🗑️</div>
+    <h3>{{ confirmModal.title }}</h3>
+    <p>{{ confirmModal.message }}</p>
+    <div class="confirm-target">{{ confirmModal.targetName }}</div>
+    <div class="confirm-actions">
+      <button class="btn-cancel-modal" (click)="confirmModal.open = false">Annuler</button>
+      <button class="btn-danger-modal" (click)="confirmModal.onConfirm()">
+        🗑 Supprimer définitivement
+      </button>
+    </div>
+  </div>
+
+</ng-container>

@@ -1,0 +1,70 @@
+<!-- OVERLAY -->
+<div class="drawer-overlay" [class.is-open]="isOpen" (click)="onClose()"></div>
+
+<!-- MOBILE DRAWER -->
+<aside class="drawer" [class.is-open]="isOpen">
+  <div class="drawer__head">
+    <div class="drawer__logo-text">
+      <span class="top">GAME</span>
+      <span class="bottom">Extra</span>
+    </div>
+    <button class="drawer__close" (click)="onClose()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="drawer__search">
+    <input 
+      type="text" 
+      placeholder="Rechercher..."
+      [(ngModel)]="searchQuery"
+      (keyup.enter)="onSearch()"/>
+    <button (click)="onSearch()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </button>
+  </div>
+
+  <nav class="drawer__menu">
+    <!-- Dynamic categories -->
+    <div
+      class="drawer__group"
+      *ngFor="let cat of categories; let i = index"
+      [class.is-open]="isGroupExpanded(i)">
+      <button class="drawer__group-btn" (click)="toggleGroup(i)">
+        {{ cat.name }}
+        <span class="g-arrow">▼</span>
+      </button>
+      <div class="drawer__sub">
+        <a href="/" (click)="onCategoryClick(cat.id); $event.preventDefault()">Voir tout</a>
+      </div>
+    </div>
+
+    <!-- Carte Cadeau static group -->
+    <div class="drawer__group" [class.is-open]="isGroupExpanded(-1)">
+      <button class="drawer__group-btn" (click)="toggleGroup(-1)">
+        Carte Cadeau
+        <span class="g-arrow">▼</span>
+      </button>
+      <div class="drawer__sub">
+        <a href="#">PSN</a>
+        <a href="#">Xbox Gift Card</a>
+        <a href="#">Nintendo eShop</a>
+      </div>
+    </div>
+
+    <a class="drawer__link" href="#" *ngFor="let link of quickLinks">
+      {{ link.label }}
+    </a>
+  </nav>
+
+  <div class="drawer__footer">
+    <button class="drawer__footer-btn">Connexion</button>
+    <button class="drawer__footer-btn primary">Créer un compte</button>
+  </div>
+</aside>

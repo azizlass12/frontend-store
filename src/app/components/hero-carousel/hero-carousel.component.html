@@ -1,0 +1,66 @@
+<div class="hero-carousel">
+  <!-- Loading -->
+  <div class="hero-loading" *ngIf="loading">
+    <i class="fas fa-circle-notch fa-spin"></i>
+  </div>
+
+  <!-- Slides -->
+  <div
+    class="hero-slide"
+    *ngFor="let product of products; let i = index"
+    [class.active]="isActiveSlide(i)"
+    [style.--bg]="getSlideStyle(i).bg"
+    [style.--glow]="getSlideStyle(i).glow">
+
+    <div class="hero-slide__bg-text">{{ getSlideStyle(i).watermark }}</div>
+
+    <div class="hero-slide__content">
+      <span class="hero-slide__cat">{{ product.categoryName }}</span>
+      <h2 class="hero-slide__name">{{ product.name }}</h2>
+      <p class="hero-slide__desc">{{ product.description }}</p>
+      <div class="hero-slide__price">{{ product.price }} DT</div>
+      <div class="hero-slide__actions">
+        <button class="hero-btn hero-btn--primary" (click)="onAddToCart(product)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="9" cy="21" r="1"/>
+            <circle cx="20" cy="21" r="1"/>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+          </svg>
+          Ajouter au panier
+        </button>
+        <button class="hero-btn hero-btn--ghost">Voir tout ›</button>
+      </div>
+    </div>
+
+    <div class="hero-slide__img-wrap">
+      <img [src]="product.imageUrl" [alt]="product.name" />
+    </div>
+  </div>
+
+  <!-- Arrows -->
+  <button class="hero-arrow hero-arrow--prev" (click)="prevSlide()" *ngIf="productsCount > 1">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+  </button>
+  <button class="hero-arrow hero-arrow--next" (click)="nextSlide()" *ngIf="productsCount > 1">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <polyline points="9 18 15 12 9 6"/>
+    </svg>
+  </button>
+
+  <!-- Dots -->
+  <div class="hero-dots" *ngIf="productsCount > 1">
+    <button
+      class="hero-dot"
+      *ngFor="let product of products; let i = index"
+      [class.active]="isActiveSlide(i)"
+      (click)="goToSlide(i)">
+    </button>
+  </div>
+
+  <!-- Progress -->
+  <div class="hero-progress" *ngIf="productsCount > 0">
+    <div class="hero-progress__bar"></div>
+  </div>
+</div>

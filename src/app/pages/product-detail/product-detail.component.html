@@ -1,0 +1,234 @@
+<div class="detail-wrap">
+
+  <!-- HEADER & NAVBAR -->
+  <app-header (menuClick)="drawerOpen = true" (cartClick)="goBack()"></app-header>
+  <app-navbar (burgerClick)="drawerOpen = true" (categoryClick)="onCategorySelected($event)"></app-navbar>
+  <app-drawer [isOpen]="drawerOpen" [categories]="categories"
+              (close)="drawerOpen = false"
+              (categoryClick)="onCategorySelected($event)">
+  </app-drawer>
+
+  <!-- LOADING -->
+  <div class="loading" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Chargement...</p>
+  </div>
+
+  <!-- DETAIL -->
+  <div class="detail-content" *ngIf="!loading && product">
+
+    <!-- BREADCRUMB -->
+    <div class="breadcrumb">
+      <span (click)="goBack()">Accueil</span>
+      <span class="sep">/</span>
+      <span>{{ product.categoryName }}</span>
+      <span class="sep">/</span>
+      <span class="current">{{ product.name }}</span>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="detail-grid">
+
+      <!-- IMAGE -->
+      <div class="detail-img-col">
+        <div class="detail-img-main">
+          <img [src]="product.imageUrl" [alt]="product.name"
+               onerror="this.src='https://placehold.co/500x400/1e4a8c/ffffff?text=IMG'" />
+        </div>
+        <div class="detail-stock-info">
+          <span class="stock-ok"  *ngIf="product.stock > 3">✅ En stock ({{ product.stock }} disponibles)</span>
+          <span class="stock-low" *ngIf="product.stock <= 3 && product.stock > 0">⚡ Stock limité ({{ product.stock }} restants)</span>
+          <span class="stock-out" *ngIf="product.stock === 0">❌ Rupture de stock</span>
+        </div>
+      </div>
+
+      <!-- INFO -->
+      <div class="detail-info-col">
+        <div class="detail-cat">{{ product.categoryName }}</div>
+        <h1 class="detail-name">{{ product.name }}</h1>
+        <p class="detail-ref">Réf. : {{ product.name }}</p>
+        <p class="detail-desc">{{ product.description }}</p>
+
+        <div class="detail-divider"></div>
+
+        <!-- RÉGIONS -->
+        <div class="attr-section" *ngIf="product.regionList?.length">
+          <div class="attr-label">Régions :</div>
+          <div class="region-list">
+            <div class="region-item"
+                 *ngFor="let region of product.regionList"
+                 [class.selected]="selectedRegion === region.trim()"
+                 (click)="selectRegion(region.trim())">
+              <span class="region-flag">{{ getRegionFlag(region.trim()) }}</span>
+              <span class="region-name">{{ region.trim() }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- VALEURS -->
+        <div class="attr-section" *ngIf="product.valueList?.length">
+          <div class="attr-label">Valeur :</div>
+          <div class="value-list">
+            <button class="value-btn"
+                    *ngFor="let value of product.valueList"
+                    [class.selected]="selectedValue === value.trim()"
+                    (click)="selectValue(value.trim())">
+              {{ value.trim() }}
+            </button>
+          </div>
+        </div>
+
+        <div class="detail-divider"></div>
+
+        <!-- PRICE BOX -->
+        <div class="price-box">
+          <div class="price-label">PRIX</div>
+          <div class="sidebar-price">{{ currentPrice | number:'1.0-0' }} <span>DT</span></div>
+          <div class="price-note" *ngIf="selectedValue">
+            Pour {{ selectedValue }}
+            <span *ngIf="selectedRegion"> · Région {{ selectedRegion }}</span>
+          </div>
+        </div>
+
+        <!-- QUANTITY + ADD -->
+        <div class="detail-actions" *ngIf="product.stock > 0">
+          <div class="qty-label">Quantité</div>
+          <div class="qty-control">
+            <button (click)="decreaseQty()">−</button>
+            <span>{{ quantity }}</span>
+            <button (click)="increaseQty()">+</button>
+          </div>
+          <button class="btn btn-primary"
+                  (click)="onAddToCart()"
+                  [class.added]="cartService.showAddedModal">
+            🛒 Ajouter au panier
+          </button>
+        </div>
+
+        <div class="out-of-stock-msg" *ngIf="product.stock === 0">
+          <p>Ce produit est actuellement indisponible.</p>
+        </div>
+
+        <div class="detail-divider"></div>
+
+        <!-- INFOS LIVRAISON -->
+        <div class="info-cards">
+          <div class="info-card">
+            <span class="info-icon">🚀</span>
+            <div><strong>Livraison Rapide</strong><p>CODE envoyé en ligne en quelques minutes</p></div>
+          </div>
+          <div class="info-card">
+            <span class="info-icon">🔒</span>
+            <div><strong>100% Sécurisé</strong><p>Produit authentique garanti</p></div>
+          </div>
+          <div class="info-card">
+            <span class="info-icon">📞</span>
+            <div><strong>Support Client</strong><p>Contactez-nous au 24 37 00 70</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRIX SIDEBAR -->
+      <div class="price-sidebar">
+        <div class="sidebar-box">
+          <div class="sidebar-label">PRIX</div>
+          <div class="sidebar-price">{{ currentPrice | number:'1.0-0' }} <span>DT</span></div>
+
+          <div class="sidebar-attrs" *ngIf="product.regionList?.length">
+            <div class="sidebar-attr-label">Région sélectionnée :</div>
+            <div class="sidebar-region">{{ getRegionFlag(selectedRegion) }} {{ selectedRegion }}</div>
+          </div>
+
+          <div class="sidebar-attrs" *ngIf="product.valueList?.length">
+            <div class="sidebar-attr-label">Valeur sélectionnée :</div>
+            <div class="sidebar-value">{{ selectedValue }}</div>
+          </div>
+
+          <div class="sidebar-divider"></div>
+
+          <div class="sidebar-qty">
+            <label>Quantité</label>
+            <div class="qty-row">
+              <div class="qty-ctrl">
+                <button (click)="decreaseQty()">−</button>
+                <span>{{ quantity }}</span>
+                <button (click)="increaseQty()">+</button>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary"
+                  (click)="onAddToCart()"
+                  [class.added]="cartService.showAddedModal">
+            🛒 Ajouter au panier
+          </button>
+
+          <div class="sidebar-points" *ngIf="product.stock > 0">
+            🎁 En commandant, vous gagnez
+            <strong>{{ currentPrice | number:'1.0-0' }} points</strong>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- NOT FOUND -->
+  <div class="not-found" *ngIf="!loading && !product">
+    <div>🔍</div>
+    <h2>Produit introuvable</h2>
+    <button (click)="goBack()">← Retour</button>
+  </div>
+
+<!-- ===== MODAL PRODUIT AJOUTÉ ===== -->
+<div class="modal-overlay"
+     *ngIf="cartService.showAddedModal"
+     (click)="closeModal()">
+</div>
+
+<div class="added-modal" *ngIf="cartService.showAddedModal && cartService.lastAddedProduct">
+
+  <div class="added-modal-bar">
+    <span>✓ Produit ajouté au panier avec succès</span>
+    <button (click)="closeModal()">✕</button>
+  </div>
+
+  <div class="added-modal-body">
+
+    <div class="added-modal-img">
+      <img [src]="cartService.lastAddedProduct.imageUrl || 'assets/placeholder.png'"
+           [alt]="cartService.lastAddedProduct.name"
+           onerror="this.src='https://placehold.co/200x200/0d1b2e/f5c000?text=IMG'" />
+    </div>
+
+    <div class="added-modal-info">
+      <h3>{{ cartService.lastAddedProduct.name }}</h3>
+      <p><strong>Prix :</strong> {{ cartService.lastAddedProduct.price | number:'1.0-0' }} DT</p>
+      <p *ngIf="cartService.lastAddedProduct.categoryName">
+        <strong>Catégorie :</strong> {{ cartService.lastAddedProduct.categoryName }}
+      </p>
+      <p><strong>Quantité :</strong> {{ quantity }}</p>
+    </div>
+
+    <div class="added-modal-summary">
+      <p>Il y a <strong>{{ cartService.count }}</strong> article(s) dans votre panier.</p>
+      <div class="summary-row">
+        <span>Sous-total :</span>
+        <strong>{{ cartService.total | number:'1.0-0' }} DT</strong>
+      </div>
+      <hr/>
+      <div class="summary-row total-row">
+        <span>Total</span>
+        <strong>{{ cartService.total | number:'1.0-0' }} DT</strong>
+      </div>
+      <div class="added-modal-actions">
+        <button class="btn-retour" (click)="closeModal()">RETOUR</button>
+        <button class="btn-commander" (click)="goToCheckout()">COMMANDER</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+</div>

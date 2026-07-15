@@ -1,0 +1,211 @@
+@import '../../../styles/variables';
+
+.drawer-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 400;
+  opacity: 0;
+  transition: opacity .3s;
+
+  &.is-open {
+    display: block;
+    opacity: 1;
+  }
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--drawer-w);
+  height: 100%;
+  background: var(--white);
+  z-index: 500;
+  transform: translateX(calc(-1 * var(--drawer-w)));
+  transition: transform .32s cubic-bezier(.4,0,.2,1);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+
+  &.is-open { transform: translateX(0); }
+}
+
+.drawer__head {
+  background: var(--navy);
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.drawer__logo-text {
+  line-height: 1.05;
+
+  .top {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--white);
+    letter-spacing: -.5px;
+    display: block;
+  }
+
+  .bottom {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--yellow);
+    letter-spacing: -.5px;
+    display: block;
+  }
+}
+
+.drawer__close {
+  background: rgba(255,255,255,.12);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--white);
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  transition: background .2s;
+
+  &:hover { background: rgba(255,255,255,.22); }
+
+  svg { width: 20px; height: 20px; }
+}
+
+.drawer__search {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-shrink: 0;
+
+  input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    outline: none;
+
+    &:focus { border-color: var(--blue-btn); }
+  }
+
+  button {
+    padding: 10px 14px;
+    background: var(--blue-btn);
+    color: var(--white);
+    border: none;
+    border-radius: 0 8px 8px 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+
+    svg { width: 16px; height: 16px; }
+  }
+}
+
+.drawer__menu {
+  flex: 1;
+  padding: 8px 0;
+}
+
+.drawer__group-btn {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 13px 20px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--navy);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background .15s;
+  border-bottom: 1px solid var(--border);
+
+  &:hover { background: var(--light-bg); }
+
+  .g-arrow {
+    font-size: 9px;
+    opacity: .5;
+    transition: transform .25s;
+  }
+}
+
+.drawer__group.is-open > .drawer__group-btn .g-arrow { transform: rotate(180deg); }
+
+.drawer__sub {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .32s ease;
+  background: #f8f9fc;
+}
+
+.drawer__group.is-open > .drawer__sub { max-height: 300px; }
+
+.drawer__sub a {
+  display: block;
+  padding: 11px 20px 11px 32px;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  transition: color .15s;
+
+  &:last-child { border-bottom: none; }
+  &:hover { color: var(--blue-btn); }
+}
+
+.drawer__link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+  border-bottom: 1px solid var(--border);
+  transition: background .15s;
+
+  &:hover { background: var(--light-bg); }
+}
+
+.drawer__footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.drawer__footer-btn {
+  flex: 1;
+  padding: 11px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--white);
+  color: var(--navy);
+  transition: background .2s;
+
+  &:hover { background: var(--light-bg); }
+
+  &.primary {
+    background: var(--blue-btn);
+    color: var(--white);
+    border-color: var(--blue-btn);
+
+    &:hover { background: #1348d4; }
+  }
+}
